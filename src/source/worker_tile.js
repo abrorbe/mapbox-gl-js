@@ -10,7 +10,7 @@ const assert = require('assert');
 const {makeImageAtlas} = require('../render/image_atlas');
 const {makeGlyphAtlas} = require('../render/glyph_atlas');
 const {serialize} = require('../util/web_worker_transfer');
-const TileCoord = require('./tile_coord');
+const OverscaledTileID = require('./tile_id').OverscaledTileID;
 
 import type {Bucket} from '../data/bucket';
 import type Actor from '../util/actor';
@@ -25,7 +25,7 @@ import type {
 import type {Transferable} from '../types/transferable';
 
 class WorkerTile {
-    coord: TileCoord;
+    tileID: OverscaledTileID;
     uid: string;
     zoom: number;
     pixelRatio: number;
@@ -43,7 +43,7 @@ class WorkerTile {
     vectorTile: VectorTile;
 
     constructor(params: WorkerTileParameters) {
-        this.coord = new TileCoord(params.coord.z, params.coord.x, params.coord.y, params.coord.w);
+        this.tileID = new OverscaledTileID(params.tileID.overscaledZ, params.tileID.wrap, params.tileID.canonical.z, params.tileID.canonical.x, params.tileID.canonical.y);
         this.uid = params.uid;
         this.zoom = params.zoom;
         this.pixelRatio = params.pixelRatio;
@@ -60,7 +60,7 @@ class WorkerTile {
         this.collisionBoxArray = new CollisionBoxArray();
         const sourceLayerCoder = new DictionaryCoder(Object.keys(data.layers).sort());
 
-        const featureIndex = new FeatureIndex(this.coord, this.overscaling);
+        const featureIndex = new FeatureIndex(this.tileID, this.overscaling);
         featureIndex.bucketLayerIDs = [];
 
         const buckets: {[string]: Bucket} = {};
