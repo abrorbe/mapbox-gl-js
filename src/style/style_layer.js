@@ -15,7 +15,7 @@ const {
 
 import type {Bucket} from '../data/bucket';
 import type Point from '@mapbox/point-geometry';
-import type RenderTexture from '../render/render_texture';
+import type Framebuffer from '../gl/framebuffer';
 import type {FeatureFilter} from '../style-spec/feature_filter';
 import type {
     TransitionParameters,
@@ -44,7 +44,7 @@ class StyleLayer extends Evented {
     _transitioningPaint: Transitioning<any>;
     +paint: mixed;
 
-    viewportFrame: ?RenderTexture;
+    viewportFrame: ?Framebuffer;
     _featureFilter: FeatureFilter;
 
     +queryRadius: (bucket: Bucket) => number;
