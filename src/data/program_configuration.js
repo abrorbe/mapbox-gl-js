@@ -2,10 +2,11 @@
 
 import type {GlobalProperties} from "../style-spec/expression/index";
 
-const createVertexArrayType = require('./vertex_array_type');
 const packUint8ToFloat = require('../shaders/encode_attribute').packUint8ToFloat;
 const Color = require('../style-spec/util/color');
-const {deserialize, serialize, register} = require('../util/web_worker_transfer');
+const {serialize, register} = require('../util/web_worker_transfer');
+const paintVertexArrays = require('../data/array_type/paint_vertex_arrays');
+const {PossiblyEvaluatedPropertyValue} = require('../style/properties');
 
 import type Context from '../gl/context';
 import type {TypedStyleLayer} from '../style/style_layer/typed_style_layer';
@@ -14,7 +15,7 @@ import type {ViewType, StructArray} from '../util/struct_array';
 import type VertexBuffer from '../gl/vertex_buffer';
 import type Program from '../render/program';
 import type {Feature, SourceExpression, CompositeExpression} from '../style-spec/expression';
-import type {PossiblyEvaluated, PossiblyEvaluatedPropertyValue} from '../style/properties';
+import type {PossiblyEvaluated} from '../style/properties';
 import type {Transferable} from '../types/transferable';
 
 export type LayoutAttribute = {
@@ -23,23 +24,17 @@ export type LayoutAttribute = {
     components?: number
 }
 
-type PaintAttribute = {
-    property: string,
-    name?: string,
-    useIntegerZoom?: boolean
-}
-
 export type PaintPropertyStatistics = {
     [property: string]: { max: number }
 }
 
 export type ProgramInterface = {
-    layoutAttributes: Array<LayoutAttribute>,
+    layoutArrayType: Class<StructArray>,
     indexArrayType: Class<StructArray>,
-    dynamicLayoutAttributes?: Array<LayoutAttribute>,
-    opacityAttributes?: Array<LayoutAttribute>,
-    collisionAttributes?: Array<LayoutAttribute>,
-    paintAttributes?: Array<PaintAttribute>,
+    dynamicLayoutArrayType?: Class<StructArray>,
+    opacityArrayType?: Class<StructArray>,
+    collisionArrayType?: Class<StructArray>,
+    paintArrayTypes?: Class<StructArray>,
     indexArrayType2?: Class<StructArray>
 }
 
@@ -144,11 +139,7 @@ class SourceExpressionBinder<T> implements Binder<T> {
         this.type = type;
         this.property = property;
         this.statistics = { max: -Infinity };
-        this.PaintVertexArray = createVertexArrayType([{
-            name: `a_${name}`,
-            type: 'Float32',
-            components: type === 'color' ? 2 : 1
-        }]);
+        this.PaintVertexArray = paintVertexArrays[property];
         this.paintVertexArray = new this.PaintVertexArray();
     }
 
@@ -220,11 +211,7 @@ class CompositeExpressionBinder<T> implements Binder<T> {
         this.useIntegerZoom = useIntegerZoom;
         this.zoom = zoom;
         this.statistics = { max: -Infinity };
-        this.PaintVertexArray = createVertexArrayType([{
-            name: `a_${name}`,
-            type: 'Float32',
-            components: type === 'color' ? 4 : 2
-        }]);
+        this.PaintVertexArray = paintVertexArrays[property];
         this.paintVertexArray = new this.PaintVertexArray();
     }
 
@@ -323,13 +310,15 @@ class ProgramConfiguration {
         this.cacheKey = '';
     }
 
-    static createDynamic<Layer: TypedStyleLayer>(programInterface: ProgramInterface, layer: Layer, zoom: number) {
+    static createDynamic<Layer: TypedStyleLayer>(layer: Layer, zoom: number, filterProperties: (string) => boolean) {
         const self = new ProgramConfiguration();
-
-        for (const attribute of programInterface.paintAttributes || []) {
-            const property = attribute.property;
-            const name = attribute.name || property.replace(`${layer.type}-`, '').replace(/-/g, '_');
-            const value: PossiblyEvaluatedPropertyValue<any> = layer.paint.get(property);
+        for (const property in layer.paint._values) {
+            if (!filterProperties(property)) continue;
+            const value = layer.paint.get(property);
+            if (!(value instanceof PossiblyEvaluatedPropertyValue) || !value.property.specification['property-function']) {
+                continue;
+            }
+            const name = paintAttributeName(property, layer.type);
             const type = value.property.specification.type;
             const useIntegerZoom = value.property.useIntegerZoom;
 
@@ -344,8 +333,6 @@ class ProgramConfiguration {
                 self.cacheKey += `/z_${name}`;
             }
         }
-
-        self.layoutAttributes = programInterface.layoutAttributes;
 
         return self;
     }
@@ -426,15 +413,10 @@ class ProgramConfiguration {
 class ProgramConfigurationSet<Layer: TypedStyleLayer> {
     programConfigurations: {[string]: ProgramConfiguration};
 
-    constructor(programInterface: ProgramInterface, layers: $ReadOnlyArray<Layer>, zoom: number, arrays?: Serialized) {
-        if (arrays) {
-            // remove this path once Bucket classes no longer use it.
-            this.programConfigurations = (deserialize(arrays): any).programConfigurations;
-        } else {
-            this.programConfigurations = {};
-            for (const layer of layers) {
-                this.programConfigurations[layer.id] = ProgramConfiguration.createDynamic(programInterface, layer, zoom);
-            }
+    constructor(layers: $ReadOnlyArray<Layer>, zoom: number, filterProperties: (string) => boolean = () => true) {
+        this.programConfigurations = {};
+        for (const layer of layers) {
+            this.programConfigurations[layer.id] = ProgramConfiguration.createDynamic(layer, zoom, filterProperties);
         }
     }
 
@@ -464,6 +446,25 @@ class ProgramConfigurationSet<Layer: TypedStyleLayer> {
             this.programConfigurations[layerId].destroy();
         }
     }
+}
+
+// paint property arrays
+function paintAttributeName(property, type) {
+    const attributeNameExceptions = {
+        'text-opacity': 'opacity',
+        'icon-opacity': 'opacity',
+        'text-color': 'fill_color',
+        'icon-color': 'fill_color',
+        'text-halo-color': 'halo_color',
+        'icon-halo-color': 'halo_color',
+        'text-halo-blur': 'halo_blur',
+        'icon-halo-blur': 'halo_blur',
+        'text-halo-width': 'halo_width',
+        'icon-halo-width': 'halo_width',
+        'line-gap-width': 'gapwidth'
+    };
+    return attributeNameExceptions[property] ||
+        property.replace(`${type}-`, '').replace(/-/g, '_');
 }
 
 register(ConstantBinder);
