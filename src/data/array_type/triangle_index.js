@@ -4,6 +4,7 @@
 /* eslint-disable camelcase */
 
 const {Struct, StructArray} = require('../../util/struct_array');
+const StructArrayLayout = require('./struct_array_layout_1_3ui');
 const {register} = require('../../util/web_worker_transfer');
 
 
@@ -40,50 +41,16 @@ class TriangleIndexStruct extends Struct {
     }
 );
 
-class TriangleIndexStructArray extends StructArray {
-    uint8: Uint8Array;
-    uint16: Uint16Array;
-
-    getvertices0(index: number) {
-        return this.uint16[index * 3 + 0];
-    }
-    getvertices1(index: number) {
-        return this.uint16[index * 3 + 1];
-    }
-    getvertices2(index: number) {
-        return this.uint16[index * 3 + 2];
-    }
-    emplaceBack(v0: number, v1: number, v2: number) {
-        const i = this.length;
-        this.resize(this.length + 1);
-
-        // array offsets to the end of current data for each type size
-        // var o{SIZE} = i * ROUNDED(bytesPerElement / size);
-        const o2 = i * 3;
-        this.uint16[o2 + 0] = v0;
-        this.uint16[o2 + 1] = v1;
-        this.uint16[o2 + 2] = v2;
-
-        return i;
-    }
-
-    static deserialize(input: SerializedStructArray): TriangleIndexStructArray {
-        const structArray = Object.create(TriangleIndexStructArray.prototype);
-        structArray.arrayBuffer = input.arrayBuffer;
-        structArray.length = input.length;
-        structArray.capacity = structArray.arrayBuffer.byteLength / structArray.bytesPerElement;
-        structArray._refreshViews();
-        return structArray;
-    }
+class TriangleIndexStructArray extends StructArrayLayout {
+    getvertices0(index: number) { return this.uint16[index * 3 + 0]; }
+    getvertices1(index: number) { return this.uint16[index * 3 + 1]; }
+    getvertices2(index: number) { return this.uint16[index * 3 + 2]; }
 }
 
 (TriangleIndexStructArray: any).serialize = StructArray.serialize;
 
 TriangleIndexStructArray.prototype.members = [{"name":"vertices", "type":"Uint16", "components":3, "offset":0, "size":2, "view":"uint16"}];
-TriangleIndexStructArray.prototype.bytesPerElement = 6;
-TriangleIndexStructArray.prototype._usedTypes = ["Uint8", "Uint16"];
 TriangleIndexStructArray.prototype.StructType = TriangleIndexStruct;
-
 
 register(TriangleIndexStructArray);
 

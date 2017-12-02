@@ -4,6 +4,7 @@
 /* eslint-disable camelcase */
 
 const {Struct, StructArray} = require('../../util/struct_array');
+const StructArrayLayout = require('./struct_array_layout_4_1f');
 const {register} = require('../../util/web_worker_transfer');
 
 
@@ -22,42 +23,14 @@ class LineWidthPaintVertexStruct extends Struct {
     }
 );
 
-class LineWidthPaintVertexStructArray extends StructArray {
-    uint8: Uint8Array;
-    float32: Float32Array;
-
-    geta_line_width(index: number) {
-        return this.float32[index * 1 + 0];
-    }
-    emplaceBack(v0: number) {
-        const i = this.length;
-        this.resize(this.length + 1);
-
-        // array offsets to the end of current data for each type size
-        // var o{SIZE} = i * ROUNDED(bytesPerElement / size);
-        const o4 = i * 1;
-        this.float32[o4 + 0] = v0;
-
-        return i;
-    }
-
-    static deserialize(input: SerializedStructArray): LineWidthPaintVertexStructArray {
-        const structArray = Object.create(LineWidthPaintVertexStructArray.prototype);
-        structArray.arrayBuffer = input.arrayBuffer;
-        structArray.length = input.length;
-        structArray.capacity = structArray.arrayBuffer.byteLength / structArray.bytesPerElement;
-        structArray._refreshViews();
-        return structArray;
-    }
+class LineWidthPaintVertexStructArray extends StructArrayLayout {
+    geta_line_width(index: number) { return this.float32[index * 1 + 0]; }
 }
 
 (LineWidthPaintVertexStructArray: any).serialize = StructArray.serialize;
 
 LineWidthPaintVertexStructArray.prototype.members = [{"name":"a_line_width", "type":"Float32", "components":1, "offset":0, "size":4, "view":"float32"}];
-LineWidthPaintVertexStructArray.prototype.bytesPerElement = 4;
-LineWidthPaintVertexStructArray.prototype._usedTypes = ["Uint8", "Float32"];
 LineWidthPaintVertexStructArray.prototype.StructType = LineWidthPaintVertexStruct;
-
 
 register(LineWidthPaintVertexStructArray);
 

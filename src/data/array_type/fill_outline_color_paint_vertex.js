@@ -4,6 +4,7 @@
 /* eslint-disable camelcase */
 
 const {Struct, StructArray} = require('../../util/struct_array');
+const StructArrayLayout = require('./struct_array_layout_4_2f');
 const {register} = require('../../util/web_worker_transfer');
 
 
@@ -31,46 +32,15 @@ class FillOutlineColorPaintVertexStruct extends Struct {
     }
 );
 
-class FillOutlineColorPaintVertexStructArray extends StructArray {
-    uint8: Uint8Array;
-    float32: Float32Array;
-
-    geta_fill_outline_color0(index: number) {
-        return this.float32[index * 2 + 0];
-    }
-    geta_fill_outline_color1(index: number) {
-        return this.float32[index * 2 + 1];
-    }
-    emplaceBack(v0: number, v1: number) {
-        const i = this.length;
-        this.resize(this.length + 1);
-
-        // array offsets to the end of current data for each type size
-        // var o{SIZE} = i * ROUNDED(bytesPerElement / size);
-        const o4 = i * 2;
-        this.float32[o4 + 0] = v0;
-        this.float32[o4 + 1] = v1;
-
-        return i;
-    }
-
-    static deserialize(input: SerializedStructArray): FillOutlineColorPaintVertexStructArray {
-        const structArray = Object.create(FillOutlineColorPaintVertexStructArray.prototype);
-        structArray.arrayBuffer = input.arrayBuffer;
-        structArray.length = input.length;
-        structArray.capacity = structArray.arrayBuffer.byteLength / structArray.bytesPerElement;
-        structArray._refreshViews();
-        return structArray;
-    }
+class FillOutlineColorPaintVertexStructArray extends StructArrayLayout {
+    geta_fill_outline_color0(index: number) { return this.float32[index * 2 + 0]; }
+    geta_fill_outline_color1(index: number) { return this.float32[index * 2 + 1]; }
 }
 
 (FillOutlineColorPaintVertexStructArray: any).serialize = StructArray.serialize;
 
 FillOutlineColorPaintVertexStructArray.prototype.members = [{"name":"a_fill_outline_color", "type":"Float32", "components":2, "offset":0, "size":4, "view":"float32"}];
-FillOutlineColorPaintVertexStructArray.prototype.bytesPerElement = 8;
-FillOutlineColorPaintVertexStructArray.prototype._usedTypes = ["Uint8", "Float32"];
 FillOutlineColorPaintVertexStructArray.prototype.StructType = FillOutlineColorPaintVertexStruct;
-
 
 register(FillOutlineColorPaintVertexStructArray);
 
