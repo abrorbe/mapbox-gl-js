@@ -259,6 +259,6 @@ function getQuadkey(z, x, y) {
     return quadkey;
 }
 
-register(TileCoord, {omit: ['posMatrix']});
+register('TileCoord', TileCoord, {omit: ['posMatrix']});
 
 module.exports = TileCoord;
