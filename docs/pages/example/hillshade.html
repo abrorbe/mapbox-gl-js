@@ -1,0 +1,32 @@
+<div id='map'></div>
+<script>
+var map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/outdoors-v9',
+    center: [-74.50, 40],
+    zoom: 9
+});
+
+map.on('load', function () {
+    map.removeLayer('hillshade_shadow_extreme');
+    map.removeLayer('hillshade_shadow_dark');
+    map.removeLayer('hillshade_shadow_med');
+    map.removeLayer('hillshade_shadow_faint');
+    map.removeLayer('hillshade_highlight_med');
+    map.removeLayer('hillshade_highlight_bright');
+
+    map.setLight({
+        position: [1.15, 335, 60]
+    });
+    map.addSource('dem', {
+        "type": "raster-dem",
+        "url": "mapbox://mapbox.terrain-rgb"
+    });
+    map.addLayer({
+        "id": "hillshading",
+        "source": "dem",
+        "type": "hillshade"
+    }, 'waterway-river-canal-shadow');
+});
+
+</script>

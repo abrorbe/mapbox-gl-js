@@ -40,7 +40,7 @@ module.exports = function validateSource(options) {
         errors = errors.concat(validateObject({
             key: key,
             value: value,
-            valueSpec: styleSpec[`source_raster`],
+            valueSpec: styleSpec[`source_raster_dem`],
             style: options.style,
             styleSpec: styleSpec
         }));
