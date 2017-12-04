@@ -10,7 +10,7 @@ const assert = require('assert');
 const {makeImageAtlas} = require('../render/image_atlas');
 const {makeGlyphAtlas} = require('../render/glyph_atlas');
 const {serialize} = require('../util/web_worker_transfer');
-const OverscaledTileID = require('./tile_id').OverscaledTileID;
+const {OverscaledTileID} = require('./tile_id');
 
 import type {Bucket} from '../data/bucket';
 import type Actor from '../util/actor';
